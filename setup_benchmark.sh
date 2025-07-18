@@ -817,7 +817,7 @@ run_benchmark "TimescaleDB" "/mnt/benchmark/scripts/timescaledb_benchmark.py"
 
 # Wait a bit between benchmarks
 echo "Waiting 30 seconds before next benchmark..."
-sleep 0
+sleep 30
 
 # Run Aurora MySQL benchmark
 run_benchmark "Aurora_MySQL" "/mnt/benchmark/scripts/aurora_benchmark.py"
