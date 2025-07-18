@@ -540,7 +540,7 @@ def generate_solar_data(base_time, index):
         'insertat': datetime.now(),
         'protocoltype': random.choice([True, False]),
         'pac1new': int(base_power / 3 + random.uniform(-50, 50)),
-        'systeminserted': datetime.now()
+        'systeminserted': 0
     }
 
 def insert_data(thread_id, rows_per_thread, config, base_time):
@@ -691,7 +691,7 @@ def main():
         insertat TIMESTAMP,
         protocoltype BOOLEAN,
         pac1new INT,
-        systeminserted TIMESTAMP,
+        systeminserted INT,
         INDEX idx_uhrzeit (uhrzeit),
         INDEX idx_device (device),
         INDEX idx_solarstations_id (solarstations_id)
@@ -712,8 +712,8 @@ def main():
     print("Aurora MySQL pv_benchmark table setup complete")
     
     # Get benchmark parameters
-    total_rows = int(config['BENCHMARK_ROWS'])
-    num_threads = int(config['BENCHMARK_THREADS'])
+    total_rows = config['BENCHMARK_ROWS']
+    num_threads = config['BENCHMARK_THREADS']
     rows_per_thread = total_rows // num_threads
     
     base_time = datetime.now() - timedelta(days=30)
@@ -817,7 +817,7 @@ run_benchmark "TimescaleDB" "/mnt/benchmark/scripts/timescaledb_benchmark.py"
 
 # Wait a bit between benchmarks
 echo "Waiting 30 seconds before next benchmark..."
-sleep 10
+sleep 0
 
 # Run Aurora MySQL benchmark
 run_benchmark "Aurora_MySQL" "/mnt/benchmark/scripts/aurora_benchmark.py"
