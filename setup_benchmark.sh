@@ -1,11 +1,6 @@
 #!/bin/bash
 set -eux
 
-# Create benchmark directory structure
-mkdir -p /mnt/benchmark/scripts
-mkdir -p /mnt/benchmark/config
-mkdir -p /mnt/benchmark/results
-
 # Create TimescaleDB benchmark script
 cat > /mnt/benchmark/scripts/timescaledb_benchmark.py <<'TSDB_SCRIPT'
 import psycopg2
