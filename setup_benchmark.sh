@@ -544,10 +544,10 @@ def insert_data(thread_id, rows_per_thread, config, base_time):
     """Insert data in a separate thread"""
     try:
         conn = pymysql.connect(
-            host=config['aurora_mysql']['host'],
-            user=config['aurora_mysql']['user'],
-            password=config['aurora_mysql']['password'],
-            database=config['aurora_mysql']['database'],
+            host=config['AURORA_HOST'],
+            user=config['AURORA_USER'],
+            password=config['AURORA_PASSWORD'],
+            database=config['AURORA_DATABASE'],
             autocommit=False
         )
         
@@ -633,10 +633,10 @@ def main():
     
     # Connect to Aurora MySQL
     conn = pymysql.connect(
-        host=config['aurora_mysql']['host'],
-        user=config['aurora_mysql']['user'],
-        password=config['aurora_mysql']['password'],
-        database=config['aurora_mysql']['database']
+        host=config['AURORA_HOST'],
+        user=config['AURORA_USER'],
+        password=config['AURORA_PASSWORD'],
+        database=config['AURORA_DATABASE']
     )
     
     cur = conn.cursor()
@@ -706,8 +706,8 @@ def main():
     print("Aurora MySQL pv_benchmark table setup complete")
     
     # Get benchmark parameters
-    total_rows = config['benchmark']['rows']
-    num_threads = config['benchmark']['threads']
+    total_rows = config['BENCHMARK_ROWS']
+    num_threads = config['BENCHMARK_THREADS']
     rows_per_thread = total_rows // num_threads
     
     base_time = datetime.now() - timedelta(days=30)
