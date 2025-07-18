@@ -297,25 +297,28 @@ def insert_data(thread_id, rows_per_thread):
     base_time = datetime.now() - timedelta(days=30)
     
     # Prepare the insert statement
-    insert_sql = """
-        INSERT INTO pv_benchmark (
-            solarstations_id, device, uhrzeit, s, adresse, serien_nummer, mpc,
-            idc1, idc2, idc3, udc1, udc2, udc3, riso1, riso2, riso_plus, riso_minus,
-            iac1, iac2, iac3, uac1, uac2, uac3, pac1, pac2, pac3, pac1r, pac2r, pac3r,
-            pac_tot, fac1, fac2, fac3, eac, ton, tntcdc, r_mov1, r_mov2, tntcac,
-            uacc, facc, e_total, ron_day, ron_tot, status_global, status_dc, lim_dc,
-            status_ac, lim_ac, status_iso, dc_err, ac_err, sc_err, bulk_err, com_err,
-            sc_dis, err_hw_dc, status_kalib, status_null, pdc1, pdc2, pdc3,
-            bus_v_plus, bus_v_minus, t_calc, t_sink, status_ac1, status_ac2,
-            status_ac3, status_ac4, status_dc1, status_dc2, error_status, error_ac1,
-            global_err_1, cpu_error, global_err_2, limits_ac1, limits_ac2,
-            global_err_3, eint, limits_dc1, limits_dc2, qac1, qac2, qac3,
-            tamb, theat, status_1, status_2, status_3, status_4,
-            internal_status_1, internal_status_2, internal_status_3, internal_status_4,
-            event1, operatingstate, actualpower, udc4, idc4, pdc4, udc5, idc5, pdc5,
-            udc6, idc6, pdc6, insertat, protocoltype, pac1new, systeminserted
-        ) VALUES ({})
-    """.format(', '.join(['%s'] * 103))
+    columns = [
+        'solarstations_id', 'device', 'uhrzeit', 's', 'adresse', 'serien_nummer', 'mpc',
+        'idc1', 'idc2', 'idc3', 'udc1', 'udc2', 'udc3', 'riso1', 'riso2', 'riso_plus', 'riso_minus',
+        'iac1', 'iac2', 'iac3', 'uac1', 'uac2', 'uac3', 'pac1', 'pac2', 'pac3', 'pac1r', 'pac2r', 'pac3r',
+        'pac_tot', 'fac1', 'fac2', 'fac3', 'eac', 'ton', 'tntcdc', 'r_mov1', 'r_mov2', 'tntcac',
+        'uacc', 'facc', 'e_total', 'ron_day', 'ron_tot', 'status_global', 'status_dc', 'lim_dc',
+        'status_ac', 'lim_ac', 'status_iso', 'dc_err', 'ac_err', 'sc_err', 'bulk_err', 'com_err',
+        'sc_dis', 'err_hw_dc', 'status_kalib', 'status_null', 'pdc1', 'pdc2', 'pdc3',
+        'bus_v_plus', 'bus_v_minus', 't_calc', 't_sink', 'status_ac1', 'status_ac2',
+        'status_ac3', 'status_ac4', 'status_dc1', 'status_dc2', 'error_status', 'error_ac1',
+        'global_err_1', 'cpu_error', 'global_err_2', 'limits_ac1', 'limits_ac2',
+        'global_err_3', 'eint', 'limits_dc1', 'limits_dc2', 'qac1', 'qac2', 'qac3',
+        'tamb', 'theat', 'status_1', 'status_2', 'status_3', 'status_4',
+        'internal_status_1', 'internal_status_2', 'internal_status_3', 'internal_status_4',
+        'event1', 'operatingstate', 'actualpower', 'udc4', 'idc4', 'pdc4', 'udc5', 'idc5', 'pdc5',
+        'udc6', 'idc6', 'pdc6', 'insertat', 'protocoltype', 'pac1new', 'systeminserted'
+    ]
+    
+    insert_sql = f"""
+        INSERT INTO pv_benchmark ({', '.join(columns)})
+        VALUES ({', '.join(['%s'] * len(columns))})
+    """
     
     batch_data = []
     for i in range(rows_per_thread):
@@ -693,13 +696,11 @@ def main():
         INDEX idx_device (device),
         INDEX idx_solarstations_id (solarstations_id)
     ) ENGINE=InnoDB 
-    PARTITION BY RANGE (YEAR(uhrzeit)) (
-        PARTITION p2023 VALUES LESS THAN (2024),
-        PARTITION p2024 VALUES LESS THAN (2025),
-        PARTITION p2025 VALUES LESS THAN (2026),
-        PARTITION p2026 VALUES LESS THAN (2027),
-        PARTITION p_future VALUES LESS THAN MAXVALUE
-    );
+    PARTITION BY RANGE (to_days(`uhrzeit`)) (
+	 PARTITION p20250716 VALUES LESS THAN (739813) ENGINE = InnoDB,
+	 PARTITION p20250721 VALUES LESS THAN (739818) ENGINE = InnoDB,
+	 PARTITION p20250726 VALUES LESS THAN (739823) ENGINE = InnoDB
+    )
     """
     
     cur.execute(create_table_sql)
