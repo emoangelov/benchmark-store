@@ -708,7 +708,7 @@ def main():
     );
     """
     
-    cur.execute(create_table_sql)
+    # cur.execute(create_table_sql)
     print("Aurora MySQL pv_benchmark table setup complete")
     
     # Get benchmark parameters
