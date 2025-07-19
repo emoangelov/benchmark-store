@@ -208,7 +208,7 @@ def generate_solar_data(base_time, offset_seconds):
         'fac1': 50.0 + random.uniform(-0.5, 0.5),
         'fac2': 50.0 + random.uniform(-0.5, 0.5),
         'fac3': 50.0 + random.uniform(-0.5, 0.5),
-        'eac': random.randint(0, 16777215),
+        'eac': random.randint(0, 9999999),  # Stay within DECIMAL(10,3) limit
         'ton': random.uniform(0, 100),
         'tntcdc': random.uniform(20, 80),
         'r_mov1': random.uniform(0, 1000),
@@ -216,7 +216,7 @@ def generate_solar_data(base_time, offset_seconds):
         'tntcac': random.uniform(20, 80),
         'uacc': random.uniform(200, 250),
         'facc': 50.0 + random.uniform(-1, 1),
-        'e_total': random.randint(0, 16777215),
+        'e_total': random.randint(0, 999999999999),  # Stay within DECIMAL(15,3) limit
         'ron_day': random.uniform(0, 24),
         'ron_tot': random.uniform(0, 100000),
         'status_global': random.randint(0, 255),
@@ -255,7 +255,7 @@ def generate_solar_data(base_time, offset_seconds):
         'limits_ac1': random.randint(0, 255),
         'limits_ac2': random.randint(0, 255),
         'global_err_3': random.randint(0, 255),
-        'eint': random.randint(0, 16777215),
+        'eint': random.randint(0, 9999999),
         'limits_dc1': random.randint(0, 255),
         'limits_dc2': random.randint(0, 255),
         'qac1': random.uniform(0, 1000) * sun_factor,
@@ -537,10 +537,10 @@ def generate_solar_data(base_time, index):
         'udc6': random.uniform(300, 800) if is_daylight else 0,
         'idc6': random.uniform(0, 20) * sun_factor,
         'pdc6': random.uniform(0, 2000) * sun_factor,
-        'insertat': datetime.now(),
+        'insertat': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'protocoltype': random.choice([True, False]),
         'pac1new': int(base_power / 3 + random.uniform(-50, 50)),
-        'systeminserted': datetime.now()
+        'systeminserted': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
 
 def insert_data(thread_id, rows_per_thread, config, base_time):
