@@ -580,6 +580,12 @@ def insert_data(thread_id, rows_per_thread, config, base_time):
         for i in range(rows_per_thread):
             data = generate_solar_data(base_time, i + thread_id * rows_per_thread)
             
+            # Debug: Print field counts on first iteration
+            if i == 0:
+                print(f"Thread {thread_id}: Data has {len(data)} fields")
+                print(f"Thread {thread_id}: SQL expects 103 fields")
+                print(f"Thread {thread_id}: First few data keys: {list(data.keys())[:10]}")
+            
             row_data = (
                 data['solarstations_id'], data['device'], data['uhrzeit'], data['s'],
                 data['adresse'], data['serien_nummer'], data['mpc'], data['idc1'],
