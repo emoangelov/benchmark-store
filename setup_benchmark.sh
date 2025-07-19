@@ -286,7 +286,7 @@ def generate_solar_data(base_time, offset_seconds):
         'insertat': datetime.now(),
         'protocoltype': random.choice([True, False]),
         'pac1new': int(base_power / 3 + random.uniform(-50, 50)),
-        'systeminserted': 0
+        'systeminserted': datetime.now()
     }
 
 def insert_data(thread_id, rows_per_thread):
@@ -540,7 +540,7 @@ def generate_solar_data(base_time, index):
         'insertat': datetime.now(),
         'protocoltype': random.choice([True, False]),
         'pac1new': int(base_power / 3 + random.uniform(-50, 50)),
-        'systeminserted': 0
+        'systeminserted': datetime.now()
     }
 
 def insert_data(thread_id, rows_per_thread, config, base_time):
@@ -703,7 +703,7 @@ def main():
     )
     """
     
-    cur.execute(create_table_sql)
+    # cur.execute(create_table_sql)
     print("Aurora MySQL pv_benchmark table setup complete")
     
     # Get benchmark parameters
