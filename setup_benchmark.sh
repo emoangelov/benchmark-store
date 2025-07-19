@@ -431,7 +431,7 @@ def generate_solar_data(base_time, index):
     return {
         'solarstations_id': random.randint(1, 100),
         'device': f'INV_{random.randint(1000, 9999)}',
-        'uhrzeit': timestamp,
+        'uhrzeit': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
         's': random.randint(0, 1),
         'adresse': random.randint(1, 255),
         'serien_nummer': f'SN{random.randint(100000, 999999)}',
