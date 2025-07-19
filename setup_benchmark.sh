@@ -286,7 +286,7 @@ def generate_solar_data(base_time, offset_seconds):
         'insertat': datetime.now(),
         'protocoltype': random.choice([True, False]),
         'pac1new': int(base_power / 3 + random.uniform(-50, 50)),
-        'systeminserted': datetime.now()
+        'systeminserted': 0
     }
 
 def insert_data(thread_id, rows_per_thread):
@@ -696,19 +696,14 @@ def main():
         INDEX idx_device (device),
         INDEX idx_solarstations_id (solarstations_id)
     ) ENGINE=InnoDB 
-    PARTITION BY RANGE COLUMNS (`uhrzeit`)
-    (
-    PARTITION `p2023` VALUES LESS THAN ('2023-01-01 00:00:00'),
-    PARTITION `p2024` VALUES LESS THAN ('2024-01-01 00:00:00'), 
-    PARTITION `p2025` VALUES LESS THAN ('2025-01-01 00:00:00'),
-    PARTITION `p2026` VALUES LESS THAN ('2026-01-01 00:00:00'), 
-    PARTITION `p2027` VALUES LESS THAN ('2027-01-01 00:00:00'), 
-    PARTITION `p2028` VALUES LESS THAN ('2028-01-01 00:00:00'), 
-    PARTITION `pfuture` VALUES LESS THAN (MAXVALUE)
-    );
+    PARTITION BY RANGE (to_days(`uhrzeit`)) (
+	 PARTITION p20250716 VALUES LESS THAN (739813) ENGINE = InnoDB,
+	 PARTITION p20250721 VALUES LESS THAN (739818) ENGINE = InnoDB,
+	 PARTITION p20250726 VALUES LESS THAN (739823) ENGINE = InnoDB
+    )
     """
     
-    # cur.execute(create_table_sql)
+    cur.execute(create_table_sql)
     print("Aurora MySQL pv_benchmark table setup complete")
     
     # Get benchmark parameters
