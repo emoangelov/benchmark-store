@@ -540,7 +540,7 @@ def generate_solar_data(base_time, index):
         'insertat': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'protocoltype': random.choice([True, False]),
         'pac1new': int(base_power / 3 + random.uniform(-50, 50)),
-        'systeminserted': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        'systeminserted': 0
     }
 
 def insert_data(thread_id, rows_per_thread, config, base_time):
@@ -691,7 +691,7 @@ def main():
         insertat TIMESTAMP,
         protocoltype BOOLEAN,
         pac1new INT,
-        systeminserted TIMESTAMP,
+        systeminserted INT,
         INDEX idx_uhrzeit (uhrzeit),
         INDEX idx_device (device),
         INDEX idx_solarstations_id (solarstations_id)
@@ -704,7 +704,7 @@ def main():
     """
     
     # cur.execute(create_table_sql)
-    print("Aurora MySQL pv_benchmark table setup complete")
+    # print("Aurora MySQL pv_benchmark table setup complete")
     
     # Get benchmark parameters
     total_rows = int(config['BENCHMARK_ROWS'])
