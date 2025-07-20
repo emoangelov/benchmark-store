@@ -158,9 +158,9 @@ def setup_database():
         print(f"Hypertable may already exist: {e}")
     
     # Create indexes for performance
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_pv_benchmark_time ON pv_benchmark (uhrzeit)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_pv_benchmark_device ON pv_benchmark (device)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_pv_benchmark_station ON pv_benchmark (solarstations_id)")
+    # cur.execute("CREATE INDEX IF NOT EXISTS idx_pv_benchmark_time ON pv_benchmark (uhrzeit)")
+    # cur.execute("CREATE INDEX IF NOT EXISTS idx_pv_benchmark_device ON pv_benchmark (device)")
+    # cur.execute("CREATE INDEX IF NOT EXISTS idx_pv_benchmark_station ON pv_benchmark (solarstations_id)")
     
     conn.commit()
     conn.close()
