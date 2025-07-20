@@ -420,14 +420,10 @@ def generate_solar_data(base_time, index):
     """Generate realistic solar inverter data with time-based patterns"""
     timestamp = base_time + timedelta(seconds=index * 10)
     hour = timestamp.hour
-    
-    # Solar generation pattern (daylight hours 6-18)
     is_daylight = 6 <= hour <= 18
     sun_factor = max(0, (1 - abs(hour - 12) / 6)) if is_daylight else 0
-    
-    # Base power generation
     base_power = random.uniform(0, 5000) * sun_factor
-    
+
     return {
         'solarstations_id': random.randint(1, 100),
         'device': f'INV_{random.randint(1000, 9999)}',
@@ -459,20 +455,20 @@ def generate_solar_data(base_time, index):
         'pac2r': int(base_power / 3 * 0.1),
         'pac3r': int(base_power / 3 * 0.1),
         'pac_tot': int(base_power),
-        'fac1': random.uniform(49.8, 50.2),
-        'fac2': random.uniform(49.8, 50.2),
-        'fac3': random.uniform(49.8, 50.2),
-        'eac': random.uniform(0, 50000),
-        'ton': random.uniform(0, 86400),
+        'fac1': 50.0 + random.uniform(-0.5, 0.5),
+        'fac2': 50.0 + random.uniform(-0.5, 0.5),
+        'fac3': 50.0 + random.uniform(-0.5, 0.5),
+        'eac': random.uniform(0, 9999999),
+        'ton': random.uniform(0, 100),
         'tntcdc': random.uniform(20, 80),
         'r_mov1': random.uniform(0, 1000),
         'r_mov2': random.uniform(0, 1000),
         'tntcac': random.uniform(20, 80),
-        'uacc': random.uniform(220, 240),
-        'facc': random.uniform(49.8, 50.2),
-        'e_total': random.uniform(0, 1000000),
-        'ron_day': random.uniform(0, 86400),
-        'ron_tot': random.uniform(0, 1000000),
+        'uacc': random.uniform(200, 250),
+        'facc': 50.0 + random.uniform(-1, 1),
+        'e_total': random.uniform(0, 999999999999),
+        'ron_day': random.uniform(0, 100),
+        'ron_tot': random.uniform(0, 100),
         'status_global': random.randint(0, 65535),
         'status_dc': random.randint(0, 65535),
         'lim_dc': random.randint(0, 65535),
@@ -492,9 +488,9 @@ def generate_solar_data(base_time, index):
         'pdc2': random.uniform(0, 2000) * sun_factor,
         'pdc3': random.uniform(0, 2000) * sun_factor,
         'bus_v_plus': random.uniform(300, 400),
-        'bus_v_minus': random.uniform(300, 400),
-        't_calc': random.uniform(20, 80),
-        't_sink': random.uniform(20, 80),
+        'bus_v_minus': random.uniform(-400, -300),
+        't_calc': random.uniform(0, 255),
+        't_sink': random.uniform(-32768, 32767),
         'status_ac1': random.randint(-128, 127),
         'status_ac2': random.randint(-128, 127),
         'status_ac3': random.randint(-128, 127),
@@ -509,13 +505,13 @@ def generate_solar_data(base_time, index):
         'limits_ac1': random.randint(-2147483648, 2147483647),
         'limits_ac2': random.randint(-2147483648, 2147483647),
         'global_err_3': random.randint(-2147483648, 2147483647),
-        'eint': random.randint(-2147483648, 2147483647),
+        'eint': random.randint(0, 9999999),
         'limits_dc1': random.randint(-2147483648, 2147483647),
         'limits_dc2': random.randint(-2147483648, 2147483647),
-        'qac1': random.uniform(-1000, 1000),
-        'qac2': random.uniform(-1000, 1000),
-        'qac3': random.uniform(-1000, 1000),
-        'tamb': random.uniform(10, 40),
+        'qac1': random.uniform(0, 1000) * sun_factor,
+        'qac2': random.uniform(0, 1000) * sun_factor,
+        'qac3': random.uniform(0, 1000) * sun_factor,
+        'tamb': random.uniform(15, 35),
         'theat': random.uniform(20, 80),
         'status_1': random.randint(-128, 127),
         'status_2': random.randint(-128, 127),
@@ -538,9 +534,9 @@ def generate_solar_data(base_time, index):
         'idc6': random.uniform(0, 20) * sun_factor,
         'pdc6': random.uniform(0, 2000) * sun_factor,
         'insertat': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'protocoltype': random.choice([True, False]),
+        'protocoltype': int(random.choice([True, False])),  # MySQL expects 0/1 for BOOLEAN
         'pac1new': int(base_power / 3 + random.uniform(-50, 50)),
-        'systeminserted': 0
+        'systeminserted': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
 
 def insert_data(thread_id, rows_per_thread, config, base_time):
@@ -553,79 +549,52 @@ def insert_data(thread_id, rows_per_thread, config, base_time):
             database=config['AURORA_DATABASE'],
             autocommit=False
         )
-        
         cur = conn.cursor()
-        
-        insert_sql = """
-            INSERT INTO pv_benchmark (
-                solarstations_id, device, uhrzeit, s, adresse, serien_nummer, mpc,
-                idc1, idc2, idc3, udc1, udc2, udc3, riso1, riso2, riso_plus, riso_minus,
-                iac1, iac2, iac3, uac1, uac2, uac3, pac1, pac2, pac3, pac1r, pac2r, pac3r,
-                pac_tot, fac1, fac2, fac3, eac, ton, tntcdc, r_mov1, r_mov2, tntcac,
-                uacc, facc, e_total, ron_day, ron_tot, status_global, status_dc, lim_dc,
-                status_ac, lim_ac, status_iso, dc_err, ac_err, sc_err, bulk_err, com_err,
-                sc_dis, err_hw_dc, status_kalib, status_null, pdc1, pdc2, pdc3,
-                bus_v_plus, bus_v_minus, t_calc, t_sink, status_ac1, status_ac2,
-                status_ac3, status_ac4, status_dc1, status_dc2, error_status, error_ac1,
-                global_err_1, cpu_error, global_err_2, limits_ac1, limits_ac2,
-                global_err_3, eint, limits_dc1, limits_dc2, qac1, qac2, qac3,
-                tamb, theat, status_1, status_2, status_3, status_4,
-                internal_status_1, internal_status_2, internal_status_3, internal_status_4,
-                event1, operatingstate, actualpower, udc4, idc4, pdc4, udc5, idc5, pdc5,
-                udc6, idc6, pdc6, insertat, protocoltype, pac1new, systeminserted
-            ) VALUES ({})
-        """.format(', '.join(['%s'] * 103))
-        
+
+        columns = [
+            'solarstations_id', 'device', 'uhrzeit', 's', 'adresse', 'serien_nummer', 'mpc',
+            'idc1', 'idc2', 'idc3', 'udc1', 'udc2', 'udc3', 'riso1', 'riso2', 'riso_plus', 'riso_minus',
+            'iac1', 'iac2', 'iac3', 'uac1', 'uac2', 'uac3', 'pac1', 'pac2', 'pac3', 'pac1r', 'pac2r', 'pac3r',
+            'pac_tot', 'fac1', 'fac2', 'fac3', 'eac', 'ton', 'tntcdc', 'r_mov1', 'r_mov2', 'tntcac',
+            'uacc', 'facc', 'e_total', 'ron_day', 'ron_tot', 'status_global', 'status_dc', 'lim_dc',
+            'status_ac', 'lim_ac', 'status_iso', 'dc_err', 'ac_err', 'sc_err', 'bulk_err', 'com_err',
+            'sc_dis', 'err_hw_dc', 'status_kalib', 'status_null', 'pdc1', 'pdc2', 'pdc3',
+            'bus_v_plus', 'bus_v_minus', 't_calc', 't_sink', 'status_ac1', 'status_ac2',
+            'status_ac3', 'status_ac4', 'status_dc1', 'status_dc2', 'error_status', 'error_ac1',
+            'global_err_1', 'cpu_error', 'global_err_2', 'limits_ac1', 'limits_ac2',
+            'global_err_3', 'eint', 'limits_dc1', 'limits_dc2', 'qac1', 'qac2', 'qac3',
+            'tamb', 'theat', 'status_1', 'status_2', 'status_3', 'status_4',
+            'internal_status_1', 'internal_status_2', 'internal_status_3', 'internal_status_4',
+            'event1', 'operatingstate', 'actualpower', 'udc4', 'idc4', 'pdc4', 'udc5', 'idc5', 'pdc5',
+            'udc6', 'idc6', 'pdc6', 'insertat', 'protocoltype', 'pac1new', 'systeminserted'
+        ]
+
+        insert_sql = f"""
+            INSERT INTO pv_benchmark ({', '.join(columns)})
+            VALUES ({', '.join(['%s'] * len(columns))})
+        """
+
         batch_data = []
         for i in range(rows_per_thread):
             data = generate_solar_data(base_time, i + thread_id * rows_per_thread)
-            
-            row_data = (
-                data['solarstations_id'], data['device'], data['uhrzeit'], data['s'],
-                data['adresse'], data['serien_nummer'], data['mpc'], data['idc1'],
-                data['idc2'], data['idc3'], data['udc1'], data['udc2'], data['udc3'],
-                data['riso1'], data['riso2'], data['riso_plus'], data['riso_minus'],
-                data['iac1'], data['iac2'], data['iac3'], data['uac1'], data['uac2'],
-                data['uac3'], data['pac1'], data['pac2'], data['pac3'], data['pac1r'],
-                data['pac2r'], data['pac3r'], data['pac_tot'], data['fac1'], data['fac2'],
-                data['fac3'], data['eac'], data['ton'], data['tntcdc'], data['r_mov1'],
-                data['r_mov2'], data['tntcac'], data['uacc'], data['facc'], data['e_total'],
-                data['ron_day'], data['ron_tot'], data['status_global'], data['status_dc'],
-                data['lim_dc'], data['status_ac'], data['lim_ac'], data['status_iso'],
-                data['dc_err'], data['ac_err'], data['sc_err'], data['bulk_err'],
-                data['com_err'], data['sc_dis'], data['err_hw_dc'], data['status_kalib'],
-                data['status_null'], data['pdc1'], data['pdc2'], data['pdc3'],
-                data['bus_v_plus'], data['bus_v_minus'], data['t_calc'], data['t_sink'],
-                data['status_ac1'], data['status_ac2'], data['status_ac3'], data['status_ac4'],
-                data['status_dc1'], data['status_dc2'], data['error_status'], data['error_ac1'],
-                data['global_err_1'], data['cpu_error'], data['global_err_2'],
-                data['limits_ac1'], data['limits_ac2'], data['global_err_3'], data['eint'],
-                data['limits_dc1'], data['limits_dc2'], data['qac1'], data['qac2'],
-                data['qac3'], data['tamb'], data['theat'], data['status_1'], data['status_2'],
-                data['status_3'], data['status_4'], data['internal_status_1'],
-                data['internal_status_2'], data['internal_status_3'], data['internal_status_4'],
-                data['event1'], data['operatingstate'], data['actualpower'], data['udc4'],
-                data['idc4'], data['pdc4'], data['udc5'], data['idc5'], data['pdc5'],
-                data['udc6'], data['idc6'], data['pdc6'], data['insertat'],
-                data['protocoltype'], data['pac1new'], data['systeminserted']
-            )
-            
+
+            row_data = tuple(data[col] for col in columns)
             batch_data.append(row_data)
-            
+
             # Insert in batches of 1000
             if len(batch_data) >= 1000:
                 cur.executemany(insert_sql, batch_data)
                 conn.commit()
                 batch_data = []
-        
-        # Insert remaining data
+
+        # Insert any remaining rows
         if batch_data:
             cur.executemany(insert_sql, batch_data)
             conn.commit()
-            
+
         cur.close()
         conn.close()
-        
+
     except Exception as e:
         print(f"Thread {thread_id} error: {e}")
 
