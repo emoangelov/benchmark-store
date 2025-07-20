@@ -150,6 +150,10 @@ def setup_database():
     try:
         cur.execute("SELECT create_hypertable('pv_benchmark', 'uhrzeit')")
         print("Created hypertable on pv_benchmark")
+        
+        # Set optimal chunk interval for concurrent inserts (1 hour instead of default 7 days)
+        cur.execute("SELECT set_chunk_time_interval('pv_benchmark', INTERVAL '1 hour')")
+        print("Set chunk interval to 1 hour for better concurrency")
     except Exception as e:
         print(f"Hypertable may already exist: {e}")
     
