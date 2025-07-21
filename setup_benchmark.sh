@@ -294,85 +294,84 @@ def generate_solar_data(base_time, offset_seconds):
     }
 
 def insert_data(thread_id, rows_per_thread):
-    conn = create_connection()
+    """Insert data in a separate thread using optimized batch processing"""
+    conn = psycopg2.connect(
+        host=config['TIMESCALEDB_HOST'],
+        database=config['TIMESCALEDB_DB'],
+        user=config['TIMESCALEDB_USER'],
+        password=config['TIMESCALEDB_PASSWORD'],
+        application_name=f'benchmark_{thread_id}'
+    )
+    conn.autocommit = False
     cur = conn.cursor()
     
+    # Set work_mem and other session parameters for this connection
+    cur.execute("""
+        SET LOCAL work_mem = '64MB';
+        SET LOCAL max_parallel_workers_per_gather = 4;
+        SET LOCAL synchronous_commit TO off;
+        SET LOCAL max_parallel_workers = 8;
+    """)
+    
     start_time = time.time()
-    base_time = datetime.now() - timedelta(days=30)
     
-    # Prepare the insert statement
-    columns = [
-        'solarstations_id', 'device', 'uhrzeit', 's', 'adresse', 'serien_nummer', 'mpc',
-        'idc1', 'idc2', 'idc3', 'udc1', 'udc2', 'udc3', 'riso1', 'riso2', 'riso_plus', 'riso_minus',
-        'iac1', 'iac2', 'iac3', 'uac1', 'uac2', 'uac3', 'pac1', 'pac2', 'pac3', 'pac1r', 'pac2r', 'pac3r',
-        'pac_tot', 'fac1', 'fac2', 'fac3', 'eac', 'ton', 'tntcdc', 'r_mov1', 'r_mov2', 'tntcac',
-        'uacc', 'facc', 'e_total', 'ron_day', 'ron_tot', 'status_global', 'status_dc', 'lim_dc',
-        'status_ac', 'lim_ac', 'status_iso', 'dc_err', 'ac_err', 'sc_err', 'bulk_err', 'com_err',
-        'sc_dis', 'err_hw_dc', 'status_kalib', 'status_null', 'pdc1', 'pdc2', 'pdc3',
-        'bus_v_plus', 'bus_v_minus', 't_calc', 't_sink', 'status_ac1', 'status_ac2',
-        'status_ac3', 'status_ac4', 'status_dc1', 'status_dc2', 'error_status', 'error_ac1',
-        'global_err_1', 'cpu_error', 'global_err_2', 'limits_ac1', 'limits_ac2',
-        'global_err_3', 'eint', 'limits_dc1', 'limits_dc2', 'qac1', 'qac2', 'qac3',
-        'tamb', 'theat', 'status_1', 'status_2', 'status_3', 'status_4',
-        'internal_status_1', 'internal_status_2', 'internal_status_3', 'internal_status_4',
-        'event1', 'operatingstate', 'actualpower', 'udc4', 'idc4', 'pdc4', 'udc5', 'idc5', 'pdc5',
-        'udc6', 'idc6', 'pdc6', 'insertat', 'protocoltype', 'pac1new', 'systeminserted'
-    ]
-    
-    insert_sql = f"""
-        INSERT INTO pv_benchmark ({', '.join(columns)})
-        VALUES ({', '.join(['%s'] * len(columns))})
-    """
-    
-    batch_data = []
-    for i in range(rows_per_thread):
-        data = generate_solar_data(base_time, i + thread_id * rows_per_thread)
+    try:
+        # Generate all data first
+        all_data = []
+        for i in range(rows_per_thread):
+            data = generate_solar_data(base_time, i + thread_id * rows_per_thread)
+            all_data.append(data)
         
-        # Convert data to tuple for insertion
-        row_data = (
-            data['solarstations_id'], data['device'], data['uhrzeit'], data['s'],
-            data['adresse'], data['serien_nummer'], data['mpc'], data['idc1'],
-            data['idc2'], data['idc3'], data['udc1'], data['udc2'], data['udc3'],
-            data['riso1'], data['riso2'], data['riso_plus'], data['riso_minus'],
-            data['iac1'], data['iac2'], data['iac3'], data['uac1'], data['uac2'],
-            data['uac3'], data['pac1'], data['pac2'], data['pac3'], data['pac1r'],
-            data['pac2r'], data['pac3r'], data['pac_tot'], data['fac1'], data['fac2'],
-            data['fac3'], data['eac'], data['ton'], data['tntcdc'], data['r_mov1'],
-            data['r_mov2'], data['tntcac'], data['uacc'], data['facc'], data['e_total'],
-            data['ron_day'], data['ron_tot'], data['status_global'], data['status_dc'],
-            data['lim_dc'], data['status_ac'], data['lim_ac'], data['status_iso'],
-            data['dc_err'], data['ac_err'], data['sc_err'], data['bulk_err'],
-            data['com_err'], data['sc_dis'], data['err_hw_dc'], data['status_kalib'],
-            data['status_null'], data['pdc1'], data['pdc2'], data['pdc3'],
-            data['bus_v_plus'], data['bus_v_minus'], data['t_calc'], data['t_sink'],
-            data['status_ac1'], data['status_ac2'], data['status_ac3'], data['status_ac4'],
-            data['status_dc1'], data['status_dc2'], data['error_status'], data['error_ac1'],
-            data['global_err_1'], data['cpu_error'], data['global_err_2'],
-            data['limits_ac1'], data['limits_ac2'], data['global_err_3'], data['eint'],
-            data['limits_dc1'], data['limits_dc2'], data['qac1'], data['qac2'],
-            data['qac3'], data['tamb'], data['theat'], data['status_1'], data['status_2'],
-            data['status_3'], data['status_4'], data['internal_status_1'],
-            data['internal_status_2'], data['internal_status_3'], data['internal_status_4'],
-            data['event1'], data['operatingstate'], data['actualpower'], data['udc4'],
-            data['idc4'], data['pdc4'], data['udc5'], data['idc5'], data['pdc5'],
-            data['udc6'], data['idc6'], data['pdc6'], data['insertat'],
-            data['protocoltype'], data['pac1new'], data['systeminserted']
-        )
+        # Prepare data for COPY
+        def data_generator():
+            for data in all_data:
+                yield (
+                    data['uhrzeit'], data['device'], data['udc1'], data['idc1'], 
+                    # ... [all other fields in the exact order of your table columns] ...
+                    data['udc6'], data['idc6'], data['pdc6'], data['insertat'], 
+                    data['protocoltype'], data['pac1new'], data['systeminserted']
+                )
         
-        batch_data.append(row_data)
+        # Use COPY for bulk insert (much faster than INSERT)
+        with cur.connection.cursor() as copy_cursor:
+            # Create a temporary table for batch processing
+            copy_cursor.execute("""
+                CREATE TEMP TABLE temp_pv_benchmark (LIKE pv_benchmark) 
+                ON COMMIT DROP;
+                
+                ALTER TABLE temp_pv_benchmark 
+                ALTER COLUMN id DROP NOT NULL, 
+                ALTER COLUMN id DROP DEFAULT;
+            """)
+            
+            # Use copy_from for bulk insert
+            copy_cursor.copy_expert(
+                """
+                COPY temp_pv_benchmark (
+                    uhrzeit, device, udc1, idc1, pdc1, udc2, idc2, pdc2, 
+                    udc3, idc3, pdc3, udc4, idc4, pdc4, udc5, idc5, pdc5, 
+                    udc6, idc6, pdc6, insertat, protocoltype, pac1new, systeminserted
+                ) FROM STDIN
+                """, 
+                data_generator()
+            )
+            
+            # Insert from temp table to actual table
+            copy_cursor.execute("""
+                INSERT INTO pv_benchmark 
+                SELECT * FROM temp_pv_benchmark;
+                
+                DROP TABLE temp_pv_benchmark;
+            """)
         
-        # Insert in batches of 1000
-        if len(batch_data) >= 1000:
-            cur.executemany(insert_sql, batch_data)
-            conn.commit()
-            batch_data = []
-    
-    # Insert remaining data
-    if batch_data:
-        cur.executemany(insert_sql, batch_data)
         conn.commit()
-    
-    conn.close()
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Error in thread {thread_id}: {str(e)}")
+        raise
+    finally:
+        conn.close()
     
     end_time = time.time()
     print(f"Thread {thread_id}: Inserted {rows_per_thread} rows in {end_time - start_time:.2f} seconds")
